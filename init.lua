@@ -138,7 +138,7 @@ vim.opt.timeoutlen = 300
 -- Configure how new splits should be opened
 vim.opt.splitright = true
 vim.opt.splitbelow = true
-
+vim.opt.fileformats = 'dos,unix,mac'
 -- Sets how neovim will display certain whitespace characters in the editor.
 --  See `:help 'list'`
 --  and `:help 'listchars'`
@@ -317,7 +317,8 @@ require('lazy').setup({
 
         -- `build` is used to run some command when the plugin is installed/updated.
         -- This is only run then, not every time Neovim starts up.
-        build = 'make',
+        -- -DCMAKE_CXX_COMPILER=C:\\ProgramData\\mingw64\\mingw64\\bin\\gcc.exe -DCMAKE_C_COMPILER=C:\\ProgramData\\mingw64\\mingw64\\bin\\gcc.exe -
+        build = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release',
 
         -- `cond` is a condition used to determine whether this plugin should be
         -- installed and loaded.
@@ -671,6 +672,8 @@ require('lazy').setup({
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
         python = { 'isort', 'black' },
+        typescript = { { 'prettierd', 'prettier' } },
+        javascript = { { 'prettierd', 'prettier' } },
         --
         -- You can use a sub-list to tell conform to run *until* a formatter
         -- is found.
