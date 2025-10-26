@@ -140,7 +140,7 @@ vim.opt.timeoutlen = 300
 -- Configure how new splits should be opened
 vim.opt.splitright = true
 vim.opt.splitbelow = true
-vim.opt.fileformats = 'dos,unix,mac'
+vim.opt.fileformats = 'unix,mac'
 -- Sets how neovim will display certain whitespace characters in the editor.
 --  See `:help 'list'`
 --  and `:help 'listchars'`
@@ -201,7 +201,6 @@ vim.keymap.set('t', '<Esc>', '<C-\\><C-n>', { desc = 'Go to Normal mode from Ter
 -- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
 -- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
 -- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
-
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -675,15 +674,26 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
 
-        ruff = {},
+        ruff = {
+          settings = {
+            args = {
+              "--ignore=E501",
+            },
+            lint = {
+              select = { 'ALL' },
+              ignore = { 'W', 'E501', 'COM812' },
+            },
+          },
+        },
         -- pylsp = {
         --   settings = {
         --     pylsp = {
         --       plugins = {
         --         ruff = { enabled = true },
-        --         --pycodestyle = {
-        --         --  ignore = { 'E231', 'E501', 'W293' },
-        --         --},
+        --           pycodestyle = {
+        --            ignore = { 'E231', 'E501', 'W293' },
+        --           },
+        --         },
         --       },
         --     },
         --   },
@@ -699,7 +709,7 @@ require('lazy').setup({
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         ts_ls = {},
-        
+
         glsl_analyzer = {},
 
         lua_ls = {
@@ -787,7 +797,7 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        python = { 'isort', 'black' },
+        python = { 'ruff_fix', 'ruff_format' },
         typescript = { { 'prettierd', 'prettier' } },
         javascript = { { 'prettierd', 'prettier' } },
 
@@ -853,9 +863,7 @@ require('lazy').setup({
           completion = cmp.config.window.bordered(),
           documentation = cmp.config.window.bordered(),
         },
-        -- chosen, you will need to read `:help ins-completion`
-        --
-        -- No, but seriously. Please read `:help ins-completion`, it is really good!
+
         mapping = cmp.mapping.preset.insert {
           -- Select the [n]ext item
           ['<C-n>'] = cmp.mapping.select_next_item(),
@@ -873,31 +881,40 @@ require('lazy').setup({
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
-          ['<CR>'] = cmp.mapping.confirm { select = true },
-          ['<Tab>'] = cmp.mapping.select_next_item(),
-          ['<S-Tab>'] = cmp.mapping.select_prev_item(),
-  
+          -- ['<CR>'] = cmp.mapping.confirm { select = true },
+          -- ['<Tab>'] = cmp.mapping.select_next_item(),
+          -- ['<S-Tab>'] = cmp.mapping.select_prev_item(),
+
           -- Manually trigger a completion from nvim-cmp.
           --  Generally you don't need this, because nvim-cmp will display
           --  completions whenever it has completion options available.
           ['<C-Space>'] = cmp.mapping.complete {},
+          ['<CR>'] = cmp.mapping.confirm { select = true },
 
-          -- Think of <c-l> as moving to the right of your snippet expansion.
-          --  So if you have a snippet that's like:
-          --  function $name($args)
-          --    $body
-          --  end
-          --
-          -- <c-l> will move you to the right of each of the expansion locations.
-          -- <c-h> is similar, except moving you backwards.
-          ['<C-l>'] = cmp.mapping(function()
-            if luasnip.expand_or_locally_jumpable() then
+          -- This is the new "smart" <Tab> mapping
+          ['<Tab>'] = cmp.mapping(function(fallback)
+            -- This is the corrected line:
+            local copilot_sugg = require 'copilot.suggestion'
+
+            if copilot_sugg.is_visible() then
+              -- This is also corrected:
+              copilot_sugg.accept()
+            elseif cmp.visible() then
+              cmp.select_next_item()
+            elseif luasnip.expand_or_locally_jumpable() then
               luasnip.expand_or_jump()
+            else
+              fallback()
             end
           end, { 'i', 's' }),
-          ['<C-h>'] = cmp.mapping(function()
-            if luasnip.locally_jumpable(-1) then
+
+          ['<S-Tab>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_prev_item()
+            elseif luasnip.locally_jumpable(-1) then
               luasnip.jump(-1)
+            else
+              fallback()
             end
           end, { 'i', 's' }),
 
